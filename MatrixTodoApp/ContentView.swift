@@ -21,19 +21,18 @@ struct ContentView: View {
             // --- 좌측: 할 일 보관함 ---
             VStack(spacing: 0) {
                 List {
-                    ForEach(tasks) { task in
-                        HStack {
-                            Circle()
-                                .fill(task.quadrant.color)
-                                .frame(width: 8, height: 8)
-                            Text(task.title)
+                    Section("할 일") {
+                        ForEach(tasks.filter { !$0.isCompleted }) { task in
+                            TaskRowView(task: task)
+                                .draggable(task.id.uuidString)
                         }
-                            .padding(8)
-                            .background(task.quadrant.color.opacity(0.2))
-                            .cornerRadius(8)
-                            .draggable(task.id.uuidString)
+                        .onMove(perform: moveTasks)
                     }
-                    .onMove(perform: moveTasks)
+                    Section("완료한 일") {
+                        ForEach(tasks.filter { $0.isCompleted }.sorted(by: { $0.completionDate ?? Date() > $1.completionDate ?? Date() })) { task in
+                                TaskRowView(task: task)
+                        }
+                    }
                 }
                 .dropDestination(for: String.self) { items, _ in
                     resetTask(idString: items.first)
@@ -47,12 +46,20 @@ struct ContentView: View {
                         .padding()
                 }
                 
-                // --- 쓰레기통 ---
-                VStack {
+                // --- 컨트롤 메뉴 ---
+                VStack(spacing: 8) {
                     Divider()
+                    Button(action: clearCompletedTasks) {
+                        Label("완료한 일 청소", systemImage: "sparkles")
+                            .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.bordered)
+                    .tint(.green)
+                    .padding(.horizontal)
+                    
                     Label("쓰레기통으로 드래그하여 삭제", systemImage: isTrashHovered ? "trash.fill" : "trash")
                         .font(.caption)
-                        .padding()
+                        .padding(10)
                         .frame(maxWidth: .infinity)
                         .background(isTrashHovered ? Color.red.opacity(0.1) : Color.clear)
                         .dropDestination(for: String.self) { items, _ in
@@ -71,11 +78,23 @@ struct ContentView: View {
 
                         // 2. 배치된 할 일들
                         ForEach($tasks) { $task in
-                            if task.isPlaced {
+                            if task.isPlaced && !task.isCompleted {
                                 TaskTag(task: task)
                                     .position(task.position)
-                                    .offset(x: 0, y: 0)
                                     .draggable(task.id.uuidString)
+                                    .contextMenu {
+                                        Button {
+                                            completeTask(id: task.id)
+                                        } label: {
+                                            Label("완료", systemImage: "checkmark.circle")
+                                        }
+                                        
+                                        Button(role: .destructive) {
+                                            deleteTask(idString: task.id.uuidString)
+                                        } label: {
+                                            Label("삭제", systemImage: "trash")
+                                        }
+                                    }
                             }
                         }
                     }
@@ -137,7 +156,49 @@ struct ContentView: View {
                 }
             }
         }
+    
+        func completeTask(id: UUID) {
+            if let index = tasks.firstIndex(where: { $0.id == id }) {
+                withAnimation {
+                    tasks[index].isCompleted = true
+                    tasks[index].isPlaced = false
+                    tasks[index].quadrant = .completed
+                    tasks[index].completionDate = Date()
+                    
+                    let completedTasks = tasks.filter { $0.isCompleted }
+                    
+                    if completedTasks.count > 50 {
+                        if let oldestTask = completedTasks.sorted(by: { ($0.completionDate ?? Date()) < ($1.completionDate ?? Date()) }).first {
+                            tasks.removeAll { $0.id == oldestTask.id }
+                        }
+                    }
+                }
+            }
+        }
+    
+        func clearCompletedTasks() {
+            withAnimation {
+                tasks.removeAll() { $0.isCompleted }
+            }
+        }
     }
+
+struct TaskRowView: View {
+    let task: TodoTask
+    var body: some View {
+        HStack {
+            Circle()
+                .fill(task.quadrant.color)
+                .frame(width: 8, height: 8)
+            Text(task.title)
+        }
+        .padding(8)
+        .background(task.quadrant.color.opacity(0.2))
+        .cornerRadius(8)
+    }
+}
+
+
 
 #Preview {
     ContentView()

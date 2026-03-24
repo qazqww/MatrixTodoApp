@@ -16,6 +16,7 @@ enum Quadrant: String, CaseIterable, Codable {
     case urgentNotImportant = "긴급 (위임)"
     case importantNotUrgent = "중요 (계획)"
     case neither = "비중요"
+    case completed = "완료됨"
     
     var color: Color {
         switch self {
@@ -24,6 +25,7 @@ enum Quadrant: String, CaseIterable, Codable {
         case .urgentNotImportant: return .orange
         case .importantNotUrgent: return .blue
         case .neither: return .gray
+        case .completed: return .green
         }
     }
 }
@@ -34,5 +36,7 @@ struct TodoTask: Identifiable, Codable, Hashable {
     var title: String
     var position: CGPoint = .zero
     var isPlaced: Bool = false
+    var isCompleted: Bool = false
+    var completionDate: Date? = nil
     var quadrant: Quadrant = .inbox
 }
