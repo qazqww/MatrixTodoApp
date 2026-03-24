@@ -19,15 +19,15 @@ struct QuadrantBox: View {
                 }
                 HStack(spacing: 0) {
                     Color.orange.opacity(0.08) // 3사분면 (긴급)
-                    Color.gray.opacity(0.1)    // 4사분면 (미루기)
+                    Color.gray.opacity(0.1)    // 4사분면 (안긴급&안중요)
                 }
             }
             
-            // 가로선 (중요도 축)
+            // 세로 (중요도 축)
             Rectangle()
                 .fill(Color.gray.opacity(0.3))
                 .frame(height: 2)
-            // 세로선 (긴급도 축)
+            // 가로 (긴급도 축)
             Rectangle()
                 .fill(Color.gray.opacity(0.3))
                 .frame(width: 2)
@@ -54,7 +54,7 @@ struct TaskTag: View {
         Text(task.title)
             .padding(.horizontal, 12)
             .padding(.vertical, 8)
-            .background(task.quadrant.color.opacity(0.8)) // 포스트잇 느낌
+            .background(task.quadrant.color.opacity(0.5))
             .foregroundColor(.white)
             .cornerRadius(4)
             .shadow(radius: 2)

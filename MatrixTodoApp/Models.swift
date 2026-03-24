@@ -32,7 +32,7 @@ enum Quadrant: String, CaseIterable, Codable {
 struct TodoTask: Identifiable, Codable, Hashable {
     var id = UUID()
     var title: String
-    var position: CGPoint = .zero // 드롭된 위치 좌표
-    var isPlaced: Bool = false    // 보드에 배치되었는지 여부
+    var position: CGPoint = .zero
+    var isPlaced: Bool = false
     var quadrant: Quadrant = .inbox
 }
