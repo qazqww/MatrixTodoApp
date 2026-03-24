@@ -28,15 +28,20 @@ struct ContentView: View {
                         }
                         .onMove(perform: moveTasks)
                     }
+                    .dropDestination(for: String.self) { items, _ in
+                        resetTask(idString: items.first)
+                        return true
+                    }
                     Section("완료한 일") {
                         ForEach(tasks.filter { $0.isCompleted }.sorted(by: { $0.completionDate ?? Date() > $1.completionDate ?? Date() })) { task in
                                 TaskRowView(task: task)
+                                    .draggable(task.id.uuidString)
                         }
                     }
-                }
-                .dropDestination(for: String.self) { items, _ in
-                    resetTask(idString: items.first)
-                    return true
+                    .dropDestination(for: String.self) { items, _ in
+                        completeTask(idString: items.first)
+                        return true
+                    }
                 }
                 .navigationTitle("보관함")
                 .safeAreaInset(edge: .bottom) {
@@ -84,7 +89,7 @@ struct ContentView: View {
                                     .draggable(task.id.uuidString)
                                     .contextMenu {
                                         Button {
-                                            completeTask(id: task.id)
+                                            completeTask(idString: task.id.uuidString)
                                         } label: {
                                             Label("완료", systemImage: "checkmark.circle")
                                         }
@@ -130,6 +135,8 @@ struct ContentView: View {
                 withAnimation(.spring()) {
                     tasks[index].position = location
                     tasks[index].isPlaced = true
+                    tasks[index].isCompleted = false
+                    tasks[index].completionDate = nil
                     
                     let isLeft = location.x < size.width / 2
                     let isTop = location.y < size.height / 2
@@ -153,11 +160,15 @@ struct ContentView: View {
                     tasks[index].isPlaced = false
                     tasks[index].quadrant = .inbox
                     tasks[index].position = .zero
+                    tasks[index].isCompleted = false
+                    tasks[index].completionDate = nil
                 }
             }
         }
     
-        func completeTask(id: UUID) {
+        func completeTask(idString: String?) {
+            guard let idString = idString, let id = UUID(uuidString: idString) else { return }
+            
             if let index = tasks.firstIndex(where: { $0.id == id }) {
                 withAnimation {
                     tasks[index].isCompleted = true
