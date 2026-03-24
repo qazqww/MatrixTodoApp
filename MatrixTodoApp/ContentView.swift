@@ -19,41 +19,56 @@ struct ContentView: View {
     var body: some View {
         NavigationSplitView {
             // --- 좌측: 할 일 보관함 ---
-            VStack(spacing: 0) {
-                List {
-                    Section("할 일") {
-                        ForEach(tasks.filter { !$0.isCompleted }) { task in
-                            TaskRowView(task: task)
-                                .draggable(task.id.uuidString)
+            GeometryReader { geo in
+                VStack(spacing: 0) {
+                    VStack(alignment: .leading, spacing: 0) {
+                        Text("진행 중")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                            .padding(.horizontal)
+                            .padding(.top, 10)
+                        
+                        List {
+                            ForEach(tasks.filter { !$0.isCompleted }) { task in
+                                TaskRowView(task: task)
+                                    .draggable(task.id.uuidString)
+                            }
+                            .onMove(perform: moveTasks)
                         }
-                        .onMove(perform: moveTasks)
+                        .listStyle(.sidebar) // 사이드바 스타일 유지
                     }
+                    .frame(height: geo.size.height * 0.55)
+                    .contentShape(Rectangle())
                     .dropDestination(for: String.self) { items, _ in
                         resetTask(idString: items.first)
                         return true
                     }
-                    Section("완료한 일") {
-                        ForEach(tasks.filter { $0.isCompleted }.sorted(by: { $0.completionDate ?? Date() > $1.completionDate ?? Date() })) { task in
+                    
+                    Divider()
+                    
+                    VStack(alignment: .leading, spacing: 0) {
+                        Text("완료한 일")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                            .padding(.horizontal)
+                            .padding(.top, 10)
+                        
+                        List {
+                            ForEach(tasks.filter { $0.isCompleted }.sorted(by: { $0.completionDate ?? Date() > $1.completionDate ?? Date() })) { task in
                                 TaskRowView(task: task)
                                     .draggable(task.id.uuidString)
+                            }
                         }
+                        .listStyle(.sidebar)
                     }
+                    .frame(height: geo.size.height * 0.25)
+                    .contentShape(Rectangle())
+                    .background(Color.green.opacity(0.03))
                     .dropDestination(for: String.self) { items, _ in
                         completeTask(idString: items.first)
                         return true
                     }
-                }
-                .navigationTitle("보관함")
-                .safeAreaInset(edge: .bottom) {
-                    TextField("새 할 일...", text: $newTaskTitle)
-                        .textFieldStyle(.roundedBorder)
-                        .onSubmit { addTask() }
-                        .padding()
-                }
-                
-                // --- 컨트롤 메뉴 ---
-                VStack(spacing: 8) {
-                    Divider()
+                    
                     Button(action: clearCompletedTasks) {
                         Label("완료한 일 청소", systemImage: "sparkles")
                             .frame(maxWidth: .infinity)
@@ -61,17 +76,22 @@ struct ContentView: View {
                     .buttonStyle(.bordered)
                     .tint(.green)
                     .padding(.horizontal)
+                    .padding(.bottom, 10)
                     
-                    Label("쓰레기통으로 드래그하여 삭제", systemImage: isTrashHovered ? "trash.fill" : "trash")
-                        .font(.caption)
-                        .padding(10)
-                        .frame(maxWidth: .infinity)
-                        .background(isTrashHovered ? Color.red.opacity(0.1) : Color.clear)
-                        .dropDestination(for: String.self) { items, _ in
-                            deleteTask(idString: items.first)
-                        } isTargeted: { isTargeted in
-                            isTrashHovered = isTargeted
-                        }
+                    // --- 컨트롤 메뉴 ---
+                    VStack(spacing: 8) {
+                        
+                        Label("드래그하여 삭제", systemImage: isTrashHovered ? "trash.fill" : "trash")
+                            .font(.caption)
+                            .padding(10)
+                            .frame(maxWidth: .infinity)
+                            .background(isTrashHovered ? Color.red.opacity(0.1) : Color.clear)
+                            .dropDestination(for: String.self) { items, _ in
+                                deleteTask(idString: items.first)
+                            } isTargeted: { isTargeted in
+                                isTrashHovered = isTargeted
+                            }
+                    }
                 }
             }
         } detail: {
