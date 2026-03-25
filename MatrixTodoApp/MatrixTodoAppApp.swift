@@ -13,5 +13,6 @@ struct MatrixTodoAppApp: App {
         WindowGroup {
             ContentView()
         }
+        .windowResizability(.contentSize)
     }
 }

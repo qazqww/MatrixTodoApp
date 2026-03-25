@@ -31,7 +31,13 @@ struct ContentView: View {
                             }
                             .onMove(perform: moveTasks)
                         }
-                        .listStyle(.sidebar) // 사이드바 스타일 유지
+                        .listStyle(.sidebar)
+                        .safeAreaInset(edge: .bottom) {
+                            TextField("새 할 일...", text: $newTaskTitle)
+                                .textFieldStyle(.roundedBorder)
+                                .onSubmit { addTask() }
+                                .padding()
+                        }
                     }
                     .frame(height: geo.size.height * 0.55)
                     .contentShape(Rectangle())
@@ -56,8 +62,16 @@ struct ContentView: View {
                             }
                         }
                         .listStyle(.sidebar)
+                        
+                        Button(action: clearCompletedTasks) {
+                            Label("마친 일 정리", systemImage: "sparkles")
+                                .frame(maxWidth: .infinity)
+                        }
+                        .buttonStyle(.bordered)
+                        .tint(.green)
+                        .padding(.horizontal)
                     }
-                    .frame(height: geo.size.height * 0.25)
+                    .frame(height: geo.size.height * 0.35)
                     .contentShape(Rectangle())
                     .background(Color.green.opacity(0.03))
                     .dropDestination(for: String.self) { items, _ in
@@ -65,28 +79,17 @@ struct ContentView: View {
                         return true
                     }
                     
-                    Button(action: clearCompletedTasks) {
-                        Label("마친 일 정리", systemImage: "sparkles")
-                            .frame(maxWidth: .infinity)
-                    }
-                    .buttonStyle(.bordered)
-                    .tint(.green)
-                    .padding(.horizontal)
-                    .padding(.vertical, 5)
-                    
-                    // --- 컨트롤 메뉴 ---
-                    VStack(spacing: 8) {
-                        
-                        Label("드래그하여 삭제", systemImage: isTrashHovered ? "trash.fill" : "trash")
-                            .font(.caption)
-                            .padding(10)
-                            .frame(maxWidth: .infinity)
-                            .background(isTrashHovered ? Color.red.opacity(0.1) : Color.clear)
-                            .dropDestination(for: String.self) { items, _ in
-                                deleteTask(idString: items.first)
-                            } isTargeted: { isTargeted in
-                                isTrashHovered = isTargeted
-                            }
+                    .safeAreaInset(edge: .bottom) {
+                            Label("드래그하여 삭제", systemImage: isTrashHovered ? "trash.fill" : "trash")
+                                .font(.caption)
+                                .padding(.vertical, 5)
+                                .frame(maxWidth: .infinity)
+                                .background(isTrashHovered ? Color.red.opacity(0.1) : Color.clear)
+                                .dropDestination(for: String.self) { items, _ in
+                                    deleteTask(idString: items.first)
+                                } isTargeted: { isTargeted in
+                                    isTrashHovered = isTargeted
+                                }
                     }
                 }
             }
@@ -133,6 +136,8 @@ struct ContentView: View {
         .onChange(of: tasks) { oldValue, newValue in
             saveTasks()
         }
+        .frame(width: 700, height: 400)
+        .frame(minWidth: 700, maxWidth: 700, minHeight: 400, maxHeight: 400)
     }
     
     func addTask() {
