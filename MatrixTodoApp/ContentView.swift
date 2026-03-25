@@ -15,14 +15,14 @@ struct ContentView: View {
     ]
     @State private var newTaskTitle = ""
     @State private var isTrashHovered = false
-
+    
     var body: some View {
         NavigationSplitView {
             // --- 좌측: 할 일 보관함 ---
             GeometryReader { geo in
                 VStack(spacing: 0) {
                     VStack(alignment: .leading, spacing: 0) {
-                        Text("진행 중")
+                        Text("할 일")
                             .font(.caption)
                             .foregroundColor(.secondary)
                             .padding(.horizontal)
@@ -47,7 +47,7 @@ struct ContentView: View {
                     Divider()
                     
                     VStack(alignment: .leading, spacing: 0) {
-                        Text("완료한 일")
+                        Text("마친 일")
                             .font(.caption)
                             .foregroundColor(.secondary)
                             .padding(.horizontal)
@@ -70,13 +70,13 @@ struct ContentView: View {
                     }
                     
                     Button(action: clearCompletedTasks) {
-                        Label("완료한 일 청소", systemImage: "sparkles")
+                        Label("마친 일 정리", systemImage: "sparkles")
                             .frame(maxWidth: .infinity)
                     }
                     .buttonStyle(.bordered)
                     .tint(.green)
                     .padding(.horizontal)
-                    .padding(.bottom, 10)
+                    .padding(.vertical, 5)
                     
                     // --- 컨트롤 메뉴 ---
                     VStack(spacing: 8) {
@@ -95,124 +95,124 @@ struct ContentView: View {
                 }
             }
         } detail: {
-                // --- 우측: 아이젠하워 매트릭스 캔버스 ---
-                GeometryReader { geo in
-                    ZStack {
-                        // 1. 배경 사분면 가이드 라인 (십자선)
-                        QuadrantBox()
-
-                        // 2. 배치된 할 일들
-                        ForEach($tasks) { $task in
-                            if task.isPlaced && !task.isCompleted {
-                                TaskTag(task: task)
-                                    .position(task.position)
-                                    .draggable(task.id.uuidString)
-                                    .contextMenu {
-                                        Button {
-                                            completeTask(idString: task.id.uuidString)
-                                        } label: {
-                                            Label("완료", systemImage: "checkmark.circle")
-                                        }
-                                        
-                                        Button(role: .destructive) {
-                                            deleteTask(idString: task.id.uuidString)
-                                        } label: {
-                                            Label("삭제", systemImage: "trash")
-                                        }
+            // --- 우측: 아이젠하워 매트릭스 캔버스 ---
+            GeometryReader { geo in
+                ZStack {
+                    // 1. 배경 사분면 가이드 라인 (십자선)
+                    QuadrantBox()
+                    
+                    // 2. 배치된 할 일들
+                    ForEach($tasks) { $task in
+                        if task.isPlaced && !task.isCompleted {
+                            TaskTag(task: task)
+                                .position(task.position)
+                                .draggable(task.id.uuidString)
+                                .contextMenu {
+                                    Button {
+                                        completeTask(idString: task.id.uuidString)
+                                    } label: {
+                                        Label("완료하기", systemImage: "checkmark.circle")
                                     }
-                            }
-                        }
-                    }
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .background(Color(NSColor.windowBackgroundColor))
-                    .dropDestination(for: String.self) { items, location in
-                        updateTaskPosition(idString: items.first, location: location, size: geo.size)
-                        return true
-                    }
-                }
-            }
-        }
-
-        func addTask() {
-            if !newTaskTitle.isEmpty {
-                tasks.append(TodoTask(title: newTaskTitle))
-                newTaskTitle = ""
-            }
-        }
-        
-        func deleteTask(idString: String?) -> Bool {
-            guard let idString = idString, let id = UUID(uuidString: idString) else { return false }
-            withAnimation {
-                tasks.removeAll { $0.id == id }
-            }
-            return true
-        }
-    
-        func updateTaskPosition(idString: String?, location: CGPoint, size: CGSize) {
-            guard let idString = idString, let id = UUID(uuidString: idString) else { return }
-            
-            if let index = tasks.firstIndex(where: { $0.id == id }) {
-                withAnimation(.spring()) {
-                    tasks[index].position = location
-                    tasks[index].isPlaced = true
-                    tasks[index].isCompleted = false
-                    tasks[index].completionDate = nil
-                    
-                    let isLeft = location.x < size.width / 2
-                    let isTop = location.y < size.height / 2
-                    
-                    if isLeft && isTop { tasks[index].quadrant = .urgentImportant }
-                    else if !isLeft && isTop { tasks[index].quadrant = .importantNotUrgent }
-                    else if isLeft && !isTop { tasks[index].quadrant = .urgentNotImportant }
-                    else { tasks[index].quadrant = .neither }
-                }
-            }
-        }
-    
-        func moveTasks(from source: IndexSet, to destination: Int) {
-            tasks.move(fromOffsets: source, toOffset: destination)
-        }
-
-        func resetTask(idString: String?) {
-            guard let idString = idString, let id = UUID(uuidString: idString) else { return }
-            if let index = tasks.firstIndex(where: { $0.id == id }) {
-                withAnimation {
-                    tasks[index].isPlaced = false
-                    tasks[index].quadrant = .inbox
-                    tasks[index].position = .zero
-                    tasks[index].isCompleted = false
-                    tasks[index].completionDate = nil
-                }
-            }
-        }
-    
-        func completeTask(idString: String?) {
-            guard let idString = idString, let id = UUID(uuidString: idString) else { return }
-            
-            if let index = tasks.firstIndex(where: { $0.id == id }) {
-                withAnimation {
-                    tasks[index].isCompleted = true
-                    tasks[index].isPlaced = false
-                    tasks[index].quadrant = .completed
-                    tasks[index].completionDate = Date()
-                    
-                    let completedTasks = tasks.filter { $0.isCompleted }
-                    
-                    if completedTasks.count > 50 {
-                        if let oldestTask = completedTasks.sorted(by: { ($0.completionDate ?? Date()) < ($1.completionDate ?? Date()) }).first {
-                            tasks.removeAll { $0.id == oldestTask.id }
+                                    
+                                    Button(role: .destructive) {
+                                        deleteTask(idString: task.id.uuidString)
+                                    } label: {
+                                        Label("삭제하기", systemImage: "trash")
+                                    }
+                                }
                         }
                     }
                 }
-            }
-        }
-    
-        func clearCompletedTasks() {
-            withAnimation {
-                tasks.removeAll() { $0.isCompleted }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .background(Color(NSColor.windowBackgroundColor))
+                .dropDestination(for: String.self) { items, location in
+                    updateTaskPosition(idString: items.first, location: location, size: geo.size)
+                    return true
+                }
             }
         }
     }
+    
+    func addTask() {
+        if !newTaskTitle.isEmpty {
+            tasks.append(TodoTask(title: newTaskTitle))
+            newTaskTitle = ""
+        }
+    }
+    
+    func deleteTask(idString: String?) -> Bool {
+        guard let idString = idString, let id = UUID(uuidString: idString) else { return false }
+        withAnimation {
+            tasks.removeAll { $0.id == id }
+        }
+        return true
+    }
+    
+    func updateTaskPosition(idString: String?, location: CGPoint, size: CGSize) {
+        guard let idString = idString, let id = UUID(uuidString: idString) else { return }
+        
+        if let index = tasks.firstIndex(where: { $0.id == id }) {
+            withAnimation(.spring()) {
+                tasks[index].position = location
+                tasks[index].isPlaced = true
+                tasks[index].isCompleted = false
+                tasks[index].completionDate = nil
+                
+                let isLeft = location.x < size.width / 2
+                let isTop = location.y < size.height / 2
+                
+                if isLeft && isTop { tasks[index].quadrant = .urgentImportant }
+                else if !isLeft && isTop { tasks[index].quadrant = .importantNotUrgent }
+                else if isLeft && !isTop { tasks[index].quadrant = .urgentNotImportant }
+                else { tasks[index].quadrant = .neither }
+            }
+        }
+    }
+    
+    func moveTasks(from source: IndexSet, to destination: Int) {
+        tasks.move(fromOffsets: source, toOffset: destination)
+    }
+    
+    func resetTask(idString: String?) {
+        guard let idString = idString, let id = UUID(uuidString: idString) else { return }
+        if let index = tasks.firstIndex(where: { $0.id == id }) {
+            withAnimation {
+                tasks[index].isPlaced = false
+                tasks[index].quadrant = .inbox
+                tasks[index].position = .zero
+                tasks[index].isCompleted = false
+                tasks[index].completionDate = nil
+            }
+        }
+    }
+    
+    func completeTask(idString: String?) {
+        guard let idString = idString, let id = UUID(uuidString: idString) else { return }
+        
+        if let index = tasks.firstIndex(where: { $0.id == id }) {
+            withAnimation {
+                tasks[index].isCompleted = true
+                tasks[index].isPlaced = false
+                tasks[index].quadrant = .completed
+                tasks[index].completionDate = Date()
+                
+                let completedTasks = tasks.filter { $0.isCompleted }
+                
+                if completedTasks.count > 50 {
+                    if let oldestTask = completedTasks.sorted(by: { ($0.completionDate ?? Date()) < ($1.completionDate ?? Date()) }).first {
+                        tasks.removeAll { $0.id == oldestTask.id }
+                    }
+                }
+            }
+        }
+    }
+    
+    func clearCompletedTasks() {
+        withAnimation {
+            tasks.removeAll() { $0.isCompleted }
+        }
+    }
+}
 
 struct TaskRowView: View {
     let task: TodoTask
@@ -228,8 +228,6 @@ struct TaskRowView: View {
         .cornerRadius(8)
     }
 }
-
-
 
 #Preview {
     ContentView()
