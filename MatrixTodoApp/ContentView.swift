@@ -8,11 +8,7 @@
 import SwiftUI
 
 struct ContentView: View {
-    @State private var tasks: [TodoTask] = [
-        TodoTask(title: "보고서 작성"),
-        TodoTask(title: "운동하기"),
-        TodoTask(title: "메일 확인")
-    ]
+    @State private var tasks: [TodoTask] = []
     @State private var newTaskTitle = ""
     @State private var isTrashHovered = false
     
@@ -131,6 +127,12 @@ struct ContentView: View {
                 }
             }
         }
+        .onAppear {
+            loadTasks()
+        }
+        .onChange(of: tasks) { oldValue, newValue in
+            saveTasks()
+        }
     }
     
     func addTask() {
@@ -210,6 +212,34 @@ struct ContentView: View {
     func clearCompletedTasks() {
         withAnimation {
             tasks.removeAll() { $0.isCompleted }
+        }
+    }
+    
+    func getDocumentsDirectory() -> URL {
+        let paths = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)
+        return paths[0].appendingPathComponent("tasks.json")
+    }
+    
+    func saveTasks() {
+        do {
+            let data = try JSONEncoder().encode(tasks)
+            try data.write(to: getDocumentsDirectory())
+        } catch {
+            print("저장 실패: \(error.localizedDescription)")
+        }
+    }
+    
+    func loadTasks() {
+        let url = getDocumentsDirectory()
+        
+        if FileManager.default.fileExists(atPath: url.path) {
+            do {
+                let data = try Data(contentsOf: url)
+                let decodedTasks = try JSONDecoder().decode([TodoTask].self, from: data)
+                self.tasks = decodedTasks
+            } catch {
+                print("불러오기 실패: \(error.localizedDescription)")
+            }
         }
     }
 }
